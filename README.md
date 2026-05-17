@@ -26,7 +26,7 @@ $$
 t(i) = 
 \begin{cases} 
 16i-12 & \text{for } 1 \lt i \leq 320 \\
-14  & \text{for } i = 1
+14 & \text{for } i = 1
 \end{cases}
 $$
 $$
