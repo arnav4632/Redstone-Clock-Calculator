@@ -1,6 +1,6 @@
 # Methods
 
-Clock time is defined as the time(in ticks) between the start of one pulse and the start of the next pulse of the output.<br>
+Clock time is defined as the time(in game ticks) between the start of one pulse and the start of the next pulse of the output.<br>
 Method for precise measurement was using these command blocks:<br>
 ![Command Block Setup. Output signal goes directly to different command blocks, #1 and #2. #1 is standalone; #2 connects to #3-#8 which are chain command blocks](images/setup_example.png)
    1. Repeat/Unconditional/Needs Redstone. connected to output of clock `/scoreboard players add #pulse_duration timer 1`
@@ -15,7 +15,10 @@ Method for precise measurement was using these command blocks:<br>
 
 # Clocks
 Red wool is the output of the clock.<br>
-i represents total items; t represents clock time; p represents pulse duration
+$i$ represents total items when applicable; $t$ represents clock time; $p$ represents pulse duration
+
+## Repeater Clock(4 ticks minimum, infinitely scalable)
+Simple and effective for shorter clocks. Needs a 'starting pulse' to get it going. The pulse length will be equal to the starting pulse.
 ## Etho Hopper Clock Full (0.7-255.4 seconds)
 Uses 2 sticky pistons, 2 hoppers, 2 comparators, 1 redstone block, and 2 redstone dust.<br>
 
@@ -68,6 +71,24 @@ p(i_1,i_2) =
 \frac{t(i_1,i_2)}{2} - 1 & \text{for } 3 \leq i_1 \leq 320; \quad 3 \leq i_2 \leq 576
 \end{cases}
 $$
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/Chained_Clock-1.png" width="500" alt="Chained Clock View 1"><br>
+      <b></b>
+    </td>
+    <td align="center">
+      <img src="images/Chained_Clock-2.png" width="500" alt="Chained Clock View 2"><br>
+      <b></b>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <img src="images/Chained_Clock-3.png" width="450" alt="Chained Clock View 3"><br>
+      <b></b>
+    </td>
+  </tr>
+</table>
 
 
 
@@ -80,7 +101,7 @@ $$
 t=32i_1i_2-24i_2\\
 t=i_2(32i_1-24)\\
 i_2=\frac{t}{32i_1-24}\\
-\text{trying to minimize } f(i_1)=i_1+\frac{t}{32i_1-24}\\
+\text{minimize } f(i_1)=i_1+\frac{t}{32i_1-24}\\
 
 
 \frac{d}{di_2}[i_1+\frac{t}{32i_1-24}]=1-\frac{32t}{(32i_1-24)^2}=0\\
