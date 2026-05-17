@@ -33,7 +33,7 @@ $$
 $$
 p(i) = 
 \begin{cases} 
-\frac{t(i)}{2} - 1 & \text{for } 1 \le i \le 320 \\
+\frac{t(i)}{2} - 1 & \text{for } 1 \le i \le 320
 \end{cases}
 $$
 Front
@@ -51,6 +51,7 @@ t(i) =
 7  & \text{for } i = 1
 \end{cases}
 $$
+
 $$
 p(i) = 2
 $$
