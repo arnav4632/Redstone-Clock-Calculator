@@ -5,11 +5,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Redstone Clock Calculator</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .left {
             padding: 2rem;
-            margin: 0;
+            flex-shrink: 0;
+            overflow-y: auto;
+        }
+
+        .right {
+            flex: 1;
+            border-left: 1px solid #ddd;
+            overflow-y: auto;
+            padding: 2rem;
         }
 
         h1 {
@@ -40,56 +64,9 @@
             margin-bottom: 1.5rem;
         }
 
-        .layout {
-            display: flex;
-            gap: 2rem;
-            align-items: flex-start;
-        }
-
-        .left {
-            min-width: 0;
-            flex: 1;
-        }
-
-        .right {
-            width: 340px;
-            flex-shrink: 0;
-            position: sticky;
-            top: 2rem;
-            display: none;
-        }
-
-        .right.visible {
-            display: block;
-        }
-
-        .right h2 {
-            font-size: 0.95rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .right p {
-            font-size: 0.8rem;
-            color: #333;
-            margin-bottom: 0.75rem;
-            line-height: 1.5;
-        }
-
-        .right img {
-            width: 100%;
-            margin-bottom: 0.5rem;
-            display: block;
-        }
-
-        .right .img-label {
-            font-size: 0.75rem;
-            color: #777;
-            margin-bottom: 0.75rem;
-        }
-
         table {
             border-collapse: collapse;
-            width: 100%;
+            width: auto;
             font-size: 0.85rem;
             margin-top: 1rem;
         }
@@ -110,12 +87,9 @@
             cursor: pointer;
         }
 
-        tr.data-row:hover {
-            background: #f5f5f5;
-        }
-
+        tr.data-row:hover,
         tr.data-row.active {
-            background: #eef;
+            background: #f0f0f0;
         }
 
         .oor {
@@ -125,99 +99,151 @@
         .exact {
             font-weight: bold;
         }
+
+        /* rendered markdown styles */
+        .right h1 {
+            font-size: 1.4rem;
+            margin: 0 0 1rem;
+        }
+
+        .right h2 {
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem;
+        }
+
+        .right h3 {
+            font-size: 0.95rem;
+            margin: 1rem 0 0.4rem;
+        }
+
+        .right p {
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+        }
+
+        .right img {
+            max-width: 100%;
+            margin: 0.5rem 0;
+            display: block;
+        }
+
+        .right code {
+            font-family: monospace;
+            font-size: 0.8rem;
+            background: #f4f4f4;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+
+        .right pre {
+            background: #f4f4f4;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            overflow-x: auto;
+            font-size: 0.8rem;
+        }
+
+        .right ol,
+        .right ul {
+            padding-left: 1.5rem;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            margin-bottom: 0.75rem;
+        }
+
+        .right table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .right td,
+        .right th {
+            border: 1px solid #ddd;
+            padding: 4px 8px;
+        }
+
+        .right .section-anchor {
+            scroll-margin-top: 1rem;
+        }
     </style>
 </head>
 
 <body>
-    <h1>Redstone Clock Calculator</h1>
 
-    <div class="row">
-        <input type="number" id="inp" min="1" value="200" />
-        <label>ticks</label>
+    <div class="left">
+        <h1>Redstone Clock Calculator</h1>
+        <div class="row">
+            <input type="number" id="inp" min="1" value="200" />
+            <label>ticks</label>
+        </div>
+        <div class="row">
+            <input type="number" id="inps" min="0.05" step="0.05" value="10" />
+            <label>seconds</label>
+        </div>
+        <div id="converted"></div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Clock</th>
+                    <th>Settings</th>
+                    <th>Actual time</th>
+                    <th>Pulse</th>
+                    <th>Accuracy</th>
+                </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+        </table>
     </div>
-    <div class="row">
-        <input type="number" id="inps" min="0.05" step="0.05" value="10" />
-        <label>seconds</label>
-    </div>
-    <div id="converted"></div>
 
-    <div class="layout">
-        <div class="left">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Clock</th>
-                        <th>Settings</th>
-                        <th>Actual time</th>
-                        <th>Pulse</th>
-                        <th>Accuracy</th>
-                    </tr>
-                </thead>
-                <tbody id="tbody"></tbody>
-            </table>
-        </div>
-        <div class="right" id="panel">
-            <h2 id="panel-title"></h2>
-            <p id="panel-desc"></p>
-            <div id="panel-imgs"></div>
-        </div>
-    </div>
+    <div class="right" id="readme"></div>
 
     <script>
         const inpT = document.getElementById('inp');
         const inpS = document.getElementById('inps');
         const conv = document.getElementById('converted');
         const tbody = document.getElementById('tbody');
-        const panel = document.getElementById('panel');
-        const panelTitle = document.getElementById('panel-title');
-        const panelDesc = document.getElementById('panel-desc');
-        const panelImgs = document.getElementById('panel-imgs');
+        const readme = document.getElementById('readme');
+
+        // anchor IDs matching h2s in the README
+        const ANCHORS = {
+            'Repeater': 'repeater-clock4-ticks-minimum-infinitely-scalable',
+            'Etho Hopper (Full)': 'etho-hopper-clock-full-07-2554-seconds',
+            'Etho Hopper (Halved)': 'etho-hopper-clock-halved-035-1277-seconds',
+            'Chained Hopper-Dropper': 'chained-hopper-dropper-clock-14-seconds---81728-hrs',
+        };
+
+        fetch('README.md')
+            .then(r => r.text())
+            .then(md => {
+                readme.innerHTML = marked.parse(md);
+                renderMathInElement(readme, {
+                    delimiters: [
+                        { left: '$$', right: '$$', display: true },
+                        { left: '$', right: '$', display: false }
+                    ]
+                });
+                readme.querySelectorAll('h1,h2,h3').forEach(h => h.classList.add('section-anchor'));
+            });
+
+        function scrollTo(name) {
+            // find h2 by exact text match
+            const el = Array.from(readme.querySelectorAll('h2')).find(h => {
+                const txt = h.textContent.toLowerCase();
+                if (name === 'Etho Hopper (Full)') return txt.includes('full');
+                if (name === 'Etho Hopper (Halved)') return txt.includes('halved');
+                if (name === 'Repeater') return txt.includes('repeater');
+                if (name === 'Chained Hopper-Dropper') return txt.includes('chained');
+                return false;
+            });
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
         let updating = false;
         inpT.addEventListener('input', () => { if (updating) return; updating = true; inpS.value = (parseFloat(inpT.value) || 0) / 20; updating = false; render(parseInt(inpT.value) || 0); });
         inpS.addEventListener('input', () => { if (updating) return; updating = true; inpT.value = Math.round((parseFloat(inpS.value) || 0) * 20); updating = false; render(parseInt(inpT.value) || 0); });
-
-        const INFO = {
-            'Repeater': {
-                desc: 'Simple and effective for shorter clocks. Needs a starting pulse to get it going. The pulse length will equal the starting pulse.',
-                imgs: []
-            },
-            'Etho Hopper (Full)': {
-                desc: 'Uses 2 sticky pistons, 2 hoppers, 2 comparators, 1 redstone block, and 2 redstone dust. Pulse length is half the clock time minus 1.',
-                imgs: [
-                    { src: 'images/Etho_Hopper_Clock_Full-1.png', label: 'Front' },
-                    { src: 'images/Etho_Hopper_Clock_Full-2.png', label: 'Back' },
-                ]
-            },
-            'Etho Hopper (Halved)': {
-                desc: 'Uses an observer to modulate the output, making pulse length independent of clock time and halving the clock time. Uses 2 sticky pistons, 2 hoppers, 2 comparators, 1 redstone block, 2 redstone dust, 1 observer, and 1 optional repeater.',
-                imgs: [
-                    { src: 'images/Etho_Hopper_Clock_Halved.png', label: '' },
-                ]
-            },
-            'Chained Hopper-Dropper': {
-                desc: 'Can fit almost any need, at the cost of size. First stage is a normal Etho hopper clock, second stage is a dropper clock connected to it. Uses 4 sticky pistons, 2 hoppers, 2 droppers, 4 comparators, 2 redstone blocks, 5 redstone dust, 1 repeater.',
-                imgs: [
-                    { src: 'images/Chained_Clock-1.png', label: '' },
-                    { src: 'images/Chained_Clock-2.png', label: '' },
-                    { src: 'images/Chained_Clock-3.png', label: '' },
-                ]
-            }
-        };
-
-        let activeRow = null;
-
-        function showPanel(name) {
-            const info = INFO[name];
-            if (!info) return;
-            panelTitle.textContent = name;
-            panelDesc.textContent = info.desc;
-            panelImgs.innerHTML = info.imgs.map(img =>
-                `<img src="${img.src}" alt="${img.label}">` +
-                (img.label ? `<div class="img-label">${img.label}</div>` : '')
-            ).join('');
-            panel.classList.add('visible');
-        }
 
         function acc(actual, target) {
             if (actual === target) return '100%';
@@ -234,11 +260,10 @@
 
         function render(t) {
             conv.textContent = t ? `${t} ticks = ${(t / 20).toFixed(3)}s` : '';
-            if (!t || t <= 0) { tbody.innerHTML = ''; panel.classList.remove('visible'); return; }
+            if (!t || t <= 0) { tbody.innerHTML = ''; return; }
 
             const rows = [];
 
-            // Repeater
             const repMax = 600;
             if (t >= 4 && t <= repMax) {
                 const half = Math.round(t / 2);
@@ -254,31 +279,24 @@
                 rows.push({ name: 'Repeater', oor: t < 4 ? 'min 4 ticks' : 'max ~600 ticks', sortKey: 99 });
             }
 
-            // Etho Full
             const efMin = 14, efMax = 16 * 320 - 12;
             if (t >= efMin && t <= efMax) {
-                let i;
-                if (t === 14) i = 1;
-                else { i = Math.round((t + 12) / 16); i = Math.max(1, Math.min(320, i)); }
+                let i = t === 14 ? 1 : Math.max(1, Math.min(320, Math.round((t + 12) / 16)));
                 const tA = i === 1 ? 14 : 16 * i - 12;
                 rows.push({ name: 'Etho Hopper (Full)', settings: `i=${i}`, tActual: tA, pulse: tA / 2 - 1, exact: tA === t, sortKey: Math.abs(tA - t) });
             } else {
                 rows.push({ name: 'Etho Hopper (Full)', oor: `range: ${efMin}–${efMax}t`, sortKey: 99 });
             }
 
-            // Etho Halved
             const ehMin = 7, ehMax = 8 * 320 - 6;
             if (t >= ehMin && t <= ehMax) {
-                let i;
-                if (t === 7) i = 1;
-                else { i = Math.round((t + 6) / 8); i = Math.max(1, Math.min(320, i)); }
+                let i = t === 7 ? 1 : Math.max(1, Math.min(320, Math.round((t + 6) / 8)));
                 const tA = i === 1 ? 7 : 8 * i - 6;
                 rows.push({ name: 'Etho Hopper (Halved)', settings: `i=${i}`, tActual: tA, pulse: 2, exact: tA === t, sortKey: Math.abs(tA - t) });
             } else {
                 rows.push({ name: 'Etho Hopper (Halved)', oor: `range: ${ehMin}–${ehMax}t`, sortKey: 99 });
             }
 
-            // Chained
             const chainMin = 32 * 3 * 3 - 24 * 3, chainMax = 32 * 320 * 576 - 24 * 576;
             if (t >= chainMin && t <= chainMax) {
                 let best = null;
@@ -289,14 +307,12 @@
                         if (i2c < 3 || i2c > 576) continue;
                         const tA = 32 * i1c * i2c - 24 * i2c;
                         const err = Math.abs(tA - t);
-                        if (!best || err < best.err || (err === best.err && i1c + i2c < best.i1 + best.i2)) {
+                        if (!best || err < best.err || (err === best.err && i1c + i2c < best.i1 + best.i2))
                             best = { i1: i1c, i2: i2c, t: tA, err };
-                        }
                     }
                 }
-                if (best) {
+                if (best)
                     rows.push({ name: 'Chained Hopper-Dropper', settings: `i₁=${best.i1}, i₂=${best.i2}`, tActual: best.t, pulse: best.t / 2 - 1, exact: best.err === 0, sortKey: best.err });
-                }
             } else {
                 rows.push({ name: 'Chained Hopper-Dropper', oor: `range: ${chainMin}–${chainMax}t`, sortKey: 99 });
             }
@@ -305,19 +321,17 @@
 
             tbody.innerHTML = rows.map(r => {
                 if (r.oor) return `<tr><td>${r.name}</td><td colspan="4" class="oor">${r.oor}</td></tr>`;
-                const cls = r.exact ? 'data-row exact' : 'data-row';
-                return `<tr class="${cls}" data-name="${r.name}"><td>${r.name}</td><td>${r.settings}</td><td>${r.tActual}t / ${fmtTime(r.tActual)}</td><td>${r.pulse}t</td><td>${acc(r.tActual, t)}</td></tr>`;
+                return `<tr class="data-row${r.exact ? ' exact' : ''}" data-name="${r.name}"><td>${r.name}</td><td>${r.settings}</td><td>${r.tActual}t / ${fmtTime(r.tActual)}</td><td>${r.pulse}t</td><td>${acc(r.tActual, t)}</td></tr>`;
             }).join('');
 
-            // auto-show top result
             const first = tbody.querySelector('tr.data-row');
-            if (first) { first.classList.add('active'); showPanel(first.dataset.name); }
+            if (first) { first.classList.add('active'); scrollTo(first.dataset.name); }
 
             tbody.querySelectorAll('tr.data-row').forEach(tr => {
                 tr.addEventListener('mouseenter', () => {
                     tbody.querySelectorAll('tr.data-row').forEach(r => r.classList.remove('active'));
                     tr.classList.add('active');
-                    showPanel(tr.dataset.name);
+                    scrollTo(tr.dataset.name);
                 });
             });
         }
