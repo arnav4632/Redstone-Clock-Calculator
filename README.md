@@ -100,13 +100,11 @@ $$
 Most of it is simple, based on the wanted clock time, check which clocks are in that range. Sort by accuracy, and then simplicity. For the chained clock, we also try to minimize the items used, $i_1+i_2$.
 
 $$
-t=32i_1i_2-24i_2\\
-t=i_2(32i_1-24)\\
-i_2=\frac{t}{32i_1-24}\\
-\text{minimize } f(i_1)=i_1+\frac{t}{32i_1-24}\\
-
-
-\frac{d}{di_2}[i_1+\frac{t}{32i_1-24}]=1-\frac{32t}{(32i_1-24)^2}=0\\
-32i_1-24=\sqrt{32t}\\
+t=32i_1i_2-24i_2 \\\\
+t=i_2(32i_1-24)\\\\
+i_2=\frac{t}{32i_1-24}\\\\
+\text{minimize } f(i_1)=i_1+\frac{t}{32i_1-24}\\\\
+\frac{d}{di_i}[i_1+\frac{t}{32i_1-24}]=1-\frac{32t}{(32i_1-24)^2}=0\\\\
+32i_1-24=\sqrt{32t}\\\\
 i_1=\frac{\sqrt{2t}}{8} + \frac{3}{4}
 $$

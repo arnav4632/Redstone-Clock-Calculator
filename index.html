@@ -446,7 +446,6 @@
                 let repStr = '';
                 if (fours > 0) repStr += fours + 'x 4-tick';
                 if (rem > 0) repStr += (repStr ? ' + ' : '') + '1x ' + rem + '-tick';
-                repStr += ' (each side)';
                 const tRep = half * 2;
                 rows.push({ name: 'Repeater', settings: repStr, tActual: tRep, pulse: half, exact: tRep === t, sortKey: Math.abs(tRep - t) });
             } else {
@@ -457,7 +456,7 @@
             if (t >= efMin && t <= efMax) {
                 let i = t === 14 ? 1 : Math.max(1, Math.min(320, Math.round((t + 12) / 16)));
                 const tA = i === 1 ? 14 : 16 * i - 12;
-                rows.push({ name: 'Etho Hopper (Full)', settings: `i=${i}`, tActual: tA, pulse: tA / 2 - 1, exact: tA === t, sortKey: Math.abs(tA - t) });
+                rows.push({ name: 'Etho Hopper (Full)', settings: `${i} items`, tActual: tA, pulse: tA / 2 - 1, exact: tA === t, sortKey: Math.abs(tA - t) });
             } else {
                 rows.push({ name: 'Etho Hopper (Full)', oor: `range: ${efMin}–${efMax}t`, sortKey: 99 });
             }
@@ -466,7 +465,7 @@
             if (t >= ehMin && t <= ehMax) {
                 let i = t === 7 ? 1 : Math.max(1, Math.min(320, Math.round((t + 6) / 8)));
                 const tA = i === 1 ? 7 : 8 * i - 6;
-                rows.push({ name: 'Etho Hopper (Halved)', settings: `i=${i}`, tActual: tA, pulse: 2, exact: tA === t, sortKey: Math.abs(tA - t) });
+                rows.push({ name: 'Etho Hopper (Halved)', settings: `${i} items`, tActual: tA, pulse: 2, exact: tA === t, sortKey: Math.abs(tA - t) });
             } else {
                 rows.push({ name: 'Etho Hopper (Halved)', oor: `range: ${ehMin}–${ehMax}t`, sortKey: 99 });
             }
