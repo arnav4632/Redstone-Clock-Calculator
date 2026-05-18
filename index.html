@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redstone Clock Calculator</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            max-width: 560px;
+        }
+
+        h1 {
+            font-size: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        input[type=number] {
+            font-size: 1rem;
+            padding: 4px 6px;
+            width: 160px;
+        }
+
+        label {
+            font-size: 0.85rem;
+        }
+
+        #converted {
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 2px solid #000;
+            padding: 4px 8px;
+        }
+
+        td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: top;
+        }
+
+        .oor {
+            color: #aaa;
+        }
+
+        .exact {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Redstone Clock Calculator</h1>
+
+    <div class="row">
+        <input type="number" id="inp" min="1" value="200" />
+        <label>ticks</label>
+    </div>
+    <div class="row">
+        <input type="number" id="inps" min="0.05" step="0.05" value="10" />
+        <label>seconds</label>
+    </div>
+    <div id="converted"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Clock</th>
+                <th>Settings</th>
+                <th>Actual time</th>
+                <th>Pulse</th>
+                <th>Accuracy</th>
+            </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+    </table>
+
+    <script>
+        const inpT = document.getElementById('inp');
+        const inpS = document.getElementById('inps');
+        const conv = document.getElementById('converted');
+        const tbody = document.getElementById('tbody');
+        let updating = false;
+
+        inpT.addEventListener('input', () => { if (updating) return; updating = true; inpS.value = (parseFloat(inpT.value) || 0) / 20; updating = false; render(parseInt(inpT.value) || 0); });
+        inpS.addEventListener('input', () => { if (updating) return; updating = true; inpT.value = Math.round((parseFloat(inpS.value) || 0) * 20); updating = false; render(parseInt(inpT.value) || 0); });
+
+        function acc(actual, target) {
+            if (actual === target) return '100%';
+            return (100 - Math.abs(actual - target) / target * 100).toFixed(2) + '%';
+        }
+
+        function fmtTime(t) {
+            const s = t / 20;
+            if (s < 60) return s.toFixed(2) + 's';
+            const m = s / 60;
+            if (m < 60) return m.toFixed(2) + 'min';
+            return (m / 60).toFixed(2) + 'hr';
+        }
+
+        function render(t) {
+            conv.textContent = t ? `${t} ticks = ${(t / 20).toFixed(3)}s` : '';
+            if (!t || t <= 0) { tbody.innerHTML = ''; return; }
+
+            const rows = [];
+
+            // Repeater: cap at 600 ticks
+            const repMax = 600;
+            if (t >= 4 && t <= repMax) {
+                const half = Math.round(t / 2);
+                const fours = Math.floor(half / 4);
+                const rem = half % 4;
+                let repStr = '';
+                if (fours > 0) repStr += fours + 'x 4-tick';
+                if (rem > 0) repStr += (repStr ? ' + ' : '') + '1x ' + rem + '-tick';
+                repStr += ' (each side)';
+                const tRep = half * 2;
+                rows.push({ name: 'Repeater', settings: repStr, tActual: tRep, pulse: half, exact: tRep === t, sortKey: Math.abs(tRep - t) });
+            } else {
+                rows.push({ name: 'Repeater', oor: t < 4 ? 'min 4 ticks' : 'max ~600 ticks', sortKey: 99 });
+            }
+
+            // Etho Full
+            const efMin = 14, efMax = 16 * 320 - 12;
+            if (t >= efMin && t <= efMax) {
+                let i;
+                if (t === 14) i = 1;
+                else { i = Math.round((t + 12) / 16); i = Math.max(1, Math.min(320, i)); }
+                const tA = i === 1 ? 14 : 16 * i - 12;
+                rows.push({ name: 'Etho Hopper (Full)', settings: `i=${i}`, tActual: tA, pulse: tA / 2 - 1, exact: tA === t, sortKey: Math.abs(tA - t) });
+            } else {
+                rows.push({ name: 'Etho Hopper (Full)', oor: `range: ${efMin}–${efMax}t`, sortKey: 99 });
+            }
+
+            // Etho Halved
+            const ehMin = 7, ehMax = 8 * 320 - 6;
+            if (t >= ehMin && t <= ehMax) {
+                let i;
+                if (t === 7) i = 1;
+                else { i = Math.round((t + 6) / 8); i = Math.max(1, Math.min(320, i)); }
+                const tA = i === 1 ? 7 : 8 * i - 6;
+                rows.push({ name: 'Etho Hopper (Halved)', settings: `i=${i}`, tActual: tA, pulse: 2, exact: tA === t, sortKey: Math.abs(tA - t) });
+            } else {
+                rows.push({ name: 'Etho Hopper (Halved)', oor: `range: ${ehMin}–${ehMax}t`, sortKey: 99 });
+            }
+
+            // Chained
+            const chainMin = 32 * 3 * 3 - 24 * 3;
+            const chainMax = 32 * 320 * 576 - 24 * 576; // 5884416
+            if (t >= chainMin && t <= chainMax) {
+                let best = null;
+                for (let i1c = 3; i1c <= 320; i1c++) {
+                    const denom = 32 * i1c - 24;
+                    const i2e = t / denom;
+                    for (const i2c of [Math.max(3, Math.floor(i2e)), Math.min(576, Math.ceil(i2e))]) {
+                        if (i2c < 3 || i2c > 576) continue;
+                        const tA = 32 * i1c * i2c - 24 * i2c;
+                        const err = Math.abs(tA - t);
+                        if (!best || err < best.err || (err === best.err && i1c + i2c < best.i1 + best.i2)) {
+                            best = { i1: i1c, i2: i2c, t: tA, err };
+                        }
+                    }
+                }
+                if (best) {
+                    rows.push({ name: 'Chained Hopper-Dropper', settings: `i₁=${best.i1}, i₂=${best.i2}`, tActual: best.t, pulse: best.t / 2 - 1, exact: best.err === 0, sortKey: best.err });
+                }
+            } else {
+                rows.push({ name: 'Chained Hopper-Dropper', oor: `range: ${chainMin}–${chainMax}t`, sortKey: 99 });
+            }
+
+            // Sort: in-range first by accuracy, out-of-range after
+            rows.sort((a, b) => a.sortKey - b.sortKey);
+
+            tbody.innerHTML = rows.map(r => {
+                if (r.oor) return `<tr><td>${r.name}</td><td colspan="4" class="oor">${r.oor}</td></tr>`;
+                const cls = r.exact ? ' class="exact"' : '';
+                return `<tr${cls}><td>${r.name}</td><td>${r.settings}</td><td>${r.tActual}t / ${fmtTime(r.tActual)}</td><td>${r.pulse}t</td><td>${acc(r.tActual, t)}</td></tr>`;
+            }).join('');
+        }
+
+        render(200);
+    </script>
+</body>
+
+</html>
