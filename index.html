@@ -9,7 +9,7 @@
         body {
             font-family: sans-serif;
             padding: 2rem;
-            max-width: 560px;
+            margin: 0;
         }
 
         h1 {
@@ -40,6 +40,53 @@
             margin-bottom: 1.5rem;
         }
 
+        .layout {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        .left {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .right {
+            width: 340px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 2rem;
+            display: none;
+        }
+
+        .right.visible {
+            display: block;
+        }
+
+        .right h2 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .right p {
+            font-size: 0.8rem;
+            color: #333;
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .right img {
+            width: 100%;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .right .img-label {
+            font-size: 0.75rem;
+            color: #777;
+            margin-bottom: 0.75rem;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -57,6 +104,18 @@
             padding: 4px 8px;
             border-bottom: 1px solid #ddd;
             vertical-align: top;
+        }
+
+        tr.data-row {
+            cursor: pointer;
+        }
+
+        tr.data-row:hover {
+            background: #f5f5f5;
+        }
+
+        tr.data-row.active {
+            background: #eef;
         }
 
         .oor {
@@ -82,28 +141,83 @@
     </div>
     <div id="converted"></div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Clock</th>
-                <th>Settings</th>
-                <th>Actual time</th>
-                <th>Pulse</th>
-                <th>Accuracy</th>
-            </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-    </table>
+    <div class="layout">
+        <div class="left">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Clock</th>
+                        <th>Settings</th>
+                        <th>Actual time</th>
+                        <th>Pulse</th>
+                        <th>Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody"></tbody>
+            </table>
+        </div>
+        <div class="right" id="panel">
+            <h2 id="panel-title"></h2>
+            <p id="panel-desc"></p>
+            <div id="panel-imgs"></div>
+        </div>
+    </div>
 
     <script>
         const inpT = document.getElementById('inp');
         const inpS = document.getElementById('inps');
         const conv = document.getElementById('converted');
         const tbody = document.getElementById('tbody');
-        let updating = false;
+        const panel = document.getElementById('panel');
+        const panelTitle = document.getElementById('panel-title');
+        const panelDesc = document.getElementById('panel-desc');
+        const panelImgs = document.getElementById('panel-imgs');
 
+        let updating = false;
         inpT.addEventListener('input', () => { if (updating) return; updating = true; inpS.value = (parseFloat(inpT.value) || 0) / 20; updating = false; render(parseInt(inpT.value) || 0); });
         inpS.addEventListener('input', () => { if (updating) return; updating = true; inpT.value = Math.round((parseFloat(inpS.value) || 0) * 20); updating = false; render(parseInt(inpT.value) || 0); });
+
+        const INFO = {
+            'Repeater': {
+                desc: 'Simple and effective for shorter clocks. Needs a starting pulse to get it going. The pulse length will equal the starting pulse.',
+                imgs: []
+            },
+            'Etho Hopper (Full)': {
+                desc: 'Uses 2 sticky pistons, 2 hoppers, 2 comparators, 1 redstone block, and 2 redstone dust. Pulse length is half the clock time minus 1.',
+                imgs: [
+                    { src: 'images/Etho_Hopper_Clock_Full-1.png', label: 'Front' },
+                    { src: 'images/Etho_Hopper_Clock_Full-2.png', label: 'Back' },
+                ]
+            },
+            'Etho Hopper (Halved)': {
+                desc: 'Uses an observer to modulate the output, making pulse length independent of clock time and halving the clock time. Uses 2 sticky pistons, 2 hoppers, 2 comparators, 1 redstone block, 2 redstone dust, 1 observer, and 1 optional repeater.',
+                imgs: [
+                    { src: 'images/Etho_Hopper_Clock_Halved.png', label: '' },
+                ]
+            },
+            'Chained Hopper-Dropper': {
+                desc: 'Can fit almost any need, at the cost of size. First stage is a normal Etho hopper clock, second stage is a dropper clock connected to it. Uses 4 sticky pistons, 2 hoppers, 2 droppers, 4 comparators, 2 redstone blocks, 5 redstone dust, 1 repeater.',
+                imgs: [
+                    { src: 'images/Chained_Clock-1.png', label: '' },
+                    { src: 'images/Chained_Clock-2.png', label: '' },
+                    { src: 'images/Chained_Clock-3.png', label: '' },
+                ]
+            }
+        };
+
+        let activeRow = null;
+
+        function showPanel(name) {
+            const info = INFO[name];
+            if (!info) return;
+            panelTitle.textContent = name;
+            panelDesc.textContent = info.desc;
+            panelImgs.innerHTML = info.imgs.map(img =>
+                `<img src="${img.src}" alt="${img.label}">` +
+                (img.label ? `<div class="img-label">${img.label}</div>` : '')
+            ).join('');
+            panel.classList.add('visible');
+        }
 
         function acc(actual, target) {
             if (actual === target) return '100%';
@@ -120,11 +234,11 @@
 
         function render(t) {
             conv.textContent = t ? `${t} ticks = ${(t / 20).toFixed(3)}s` : '';
-            if (!t || t <= 0) { tbody.innerHTML = ''; return; }
+            if (!t || t <= 0) { tbody.innerHTML = ''; panel.classList.remove('visible'); return; }
 
             const rows = [];
 
-            // Repeater: cap at 600 ticks
+            // Repeater
             const repMax = 600;
             if (t >= 4 && t <= repMax) {
                 const half = Math.round(t / 2);
@@ -165,8 +279,7 @@
             }
 
             // Chained
-            const chainMin = 32 * 3 * 3 - 24 * 3;
-            const chainMax = 32 * 320 * 576 - 24 * 576; // 5884416
+            const chainMin = 32 * 3 * 3 - 24 * 3, chainMax = 32 * 320 * 576 - 24 * 576;
             if (t >= chainMin && t <= chainMax) {
                 let best = null;
                 for (let i1c = 3; i1c <= 320; i1c++) {
@@ -188,14 +301,25 @@
                 rows.push({ name: 'Chained Hopper-Dropper', oor: `range: ${chainMin}–${chainMax}t`, sortKey: 99 });
             }
 
-            // Sort: in-range first by accuracy, out-of-range after
             rows.sort((a, b) => a.sortKey - b.sortKey);
 
             tbody.innerHTML = rows.map(r => {
                 if (r.oor) return `<tr><td>${r.name}</td><td colspan="4" class="oor">${r.oor}</td></tr>`;
-                const cls = r.exact ? ' class="exact"' : '';
-                return `<tr${cls}><td>${r.name}</td><td>${r.settings}</td><td>${r.tActual}t / ${fmtTime(r.tActual)}</td><td>${r.pulse}t</td><td>${acc(r.tActual, t)}</td></tr>`;
+                const cls = r.exact ? 'data-row exact' : 'data-row';
+                return `<tr class="${cls}" data-name="${r.name}"><td>${r.name}</td><td>${r.settings}</td><td>${r.tActual}t / ${fmtTime(r.tActual)}</td><td>${r.pulse}t</td><td>${acc(r.tActual, t)}</td></tr>`;
             }).join('');
+
+            // auto-show top result
+            const first = tbody.querySelector('tr.data-row');
+            if (first) { first.classList.add('active'); showPanel(first.dataset.name); }
+
+            tbody.querySelectorAll('tr.data-row').forEach(tr => {
+                tr.addEventListener('mouseenter', () => {
+                    tbody.querySelectorAll('tr.data-row').forEach(r => r.classList.remove('active'));
+                    tr.classList.add('active');
+                    showPanel(tr.dataset.name);
+                });
+            });
         }
 
         render(200);
